@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
 import kotlinx.serialization.Serializable
 
+
+//мок дата
 @Serializable
 data class Character(
     val id: Int? = null,

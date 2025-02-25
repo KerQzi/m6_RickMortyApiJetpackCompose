@@ -18,16 +18,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import kg.geeks.rickmortyapicompose.ui.screens.characters.CharacterDetailScreen
+import kg.geeks.rickmortyapicompose.ui.screens.characters.detail.CharacterDetailScreen
 import kg.geeks.rickmortyapicompose.ui.screens.characters.CharactersScreen
 import kg.geeks.rickmortyapicompose.ui.screens.episodes.EpisodesScreen
+import kg.geeks.rickmortyapicompose.ui.screens.episodes.detail.EpisodeDetailScreen
 import kg.geeks.rickmortyapicompose.ui.screens.locations.LocationsScreen
+import kg.geeks.rickmortyapicompose.ui.screens.locations.detail.LocationDetailScreen
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
 
 data class BottomNavItem(val screen: Screen, val icon: ImageVector)
@@ -73,16 +74,34 @@ fun App() {
                 CharactersScreen(navController)
             }
             composable(Screen.Locations.route) {
-                LocationsScreen()
+                LocationsScreen(navController)
             }
             composable(Screen.Episodes.route) {
-                EpisodesScreen()
+                EpisodesScreen(navController)
             }
-            composable("${Screen.CharacterDetail.route}/{characterJson}") { backStackEntry ->
-                CharacterDetailScreen(
-                    characterJson = backStackEntry.arguments?.getString("characterJson"),
-                    navController = navController
-                )
+            composable("${Screen.CharacterDetail.route}/{characterId}") { backStackEntry ->
+                backStackEntry.arguments?.getString("characterId")?.let {
+                    CharacterDetailScreen(
+                        characterId = it,
+                        navController = navController
+                    )
+                }
+            }
+            composable("${Screen.EpisodeDetail.route}/{episodeId}") { backStackEntry ->
+                backStackEntry.arguments?.getString("episodeId")?.let {
+                    EpisodeDetailScreen(
+                        episodeId = it,
+                        navController = navController
+                    )
+                }
+            }
+            composable("${Screen.LocationDetail.route}/{locationId}") { backStackEntry ->
+                backStackEntry.arguments?.getString("locationId")?.let {
+                    LocationDetailScreen(
+                        locationId = it,
+                        navController = navController
+                    )
+                }
             }
         }
     }

@@ -44,8 +44,8 @@ val myTypography = Typography(
     bodyLarge = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontSize = 26.sp,
+        lineHeight = 30.sp,
         letterSpacing = 0.5.sp,
         color = White
     )
