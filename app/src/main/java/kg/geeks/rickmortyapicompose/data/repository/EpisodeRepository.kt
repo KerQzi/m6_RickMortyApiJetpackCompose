@@ -1,19 +1,19 @@
 package kg.geeks.rickmortyapicompose.data.repository
 
 import kg.geeks.rickmortyapicompose.data.api.ApiService
-import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
 import kg.geeks.rickmortyapicompose.data.dto.ResponseEpisodeModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 class EpisodeRepository(
     private val apiService: ApiService
 ) {
-    suspend fun fetchEpisodes(): List<ResponseEpisodeModel>? {
-        val response = apiService.fetchAllEpisodes()
-        return if (response.isSuccessful) response.body()?.results else null
-    }
+    fun fetchEpisodes() = flow {
+        apiService.fetchAllEpisodes().body()?.results?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 
-    suspend fun fetchEpisodeDetail(id: Int): ResponseEpisodeModel? {
-        val response = apiService.fetchEpisode(id)
-        return if (response.isSuccessful) response.body() else null
-    }
+    fun fetchEpisodeDetail(id: Int) = flow<ResponseEpisodeModel?> {
+        apiService.fetchEpisode(id).body()?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 }

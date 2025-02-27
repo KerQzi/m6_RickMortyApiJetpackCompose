@@ -2,17 +2,18 @@ package kg.geeks.rickmortyapicompose.data.repository
 
 import kg.geeks.rickmortyapicompose.data.api.ApiService
 import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 class CharacterRepository(
     private val apiService: ApiService
 ) {
-    suspend fun fetchCharacters(): List<ResponseCharacterModel>? {
-        val response = apiService.fetchAllCharacters()
-        return if (response.isSuccessful) response.body()?.results else null
-    }
+    fun fetchCharacters() = flow {
+        apiService.fetchAllCharacters().body()?.results?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 
-    suspend fun fetchCharacterDetail(id: Int): ResponseCharacterModel? {
-        val response = apiService.fetchCharacter(id)
-        return if (response.isSuccessful) response.body() else null
-    }
+    fun fetchCharacterDetail(id: Int) = flow<ResponseCharacterModel?> {
+        apiService.fetchCharacter(id).body()?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 }

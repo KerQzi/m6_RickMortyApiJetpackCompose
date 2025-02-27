@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,13 +35,11 @@ fun EpisodeDetailScreen(
     navController: NavController,
     viewModel: EpisodeViewModel = koinViewModel()
 ) {
-    var episode by remember { mutableStateOf<ResponseEpisodeModel?>(null) }
+    val episode by viewModel.episodeDetailFlow.collectAsState()
     val idInt = episodeId.toIntOrNull() ?: 0
 
     LaunchedEffect(episodeId) {
-        viewModel.fetchEpisodeDetail(idInt) {
-            episode = it
-        }
+        viewModel.fetchEpisodeDetail(idInt)
     }
 
     Column(
@@ -52,7 +51,6 @@ fun EpisodeDetailScreen(
         val name = episode?.name.toString()
         val airDate = episode?.air_date ?: "Unknown"
         val episodeCode = episode?.episode ?: "Unknown"
-        val characters = episode?.characters?.joinToString(separator = ", ") ?: "Unknown"
         val created = episode?.created ?: "Unknown"
 
         Text(

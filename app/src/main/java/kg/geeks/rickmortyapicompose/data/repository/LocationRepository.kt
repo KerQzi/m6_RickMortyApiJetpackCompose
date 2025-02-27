@@ -1,19 +1,19 @@
 package kg.geeks.rickmortyapicompose.data.repository
 
 import kg.geeks.rickmortyapicompose.data.api.ApiService
-import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
 import kg.geeks.rickmortyapicompose.data.dto.ResponseLocationModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 class LocationRepository(
     private val apiService: ApiService
 ) {
-    suspend fun fetchLocations(): List<ResponseLocationModel>? {
-        val response = apiService.fetchAllLocations()
-        return if (response.isSuccessful) response.body()?.results else null
-    }
+    fun fetchLocations() = flow {
+        apiService.fetchAllLocations().body()?.results?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 
-    suspend fun fetchLocationDetail(id: Int): ResponseLocationModel? {
-        val response = apiService.fetchLocation(id)
-        return if (response.isSuccessful) response.body() else null
-    }
+    fun fetchLocationDetail(id: Int) = flow<ResponseLocationModel?> {
+        apiService.fetchLocation(id).body()?.let { emit(it) }
+    }.flowOn(Dispatchers.IO)
 }

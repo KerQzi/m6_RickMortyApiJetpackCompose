@@ -2,6 +2,7 @@ package kg.geeks.rickmortyapicompose.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import kg.geeks.rickmortyapicompose.ui.screens.characters.detail.CharacterDetail
 import kg.geeks.rickmortyapicompose.ui.screens.characters.CharactersScreen
 import kg.geeks.rickmortyapicompose.ui.screens.episodes.EpisodesScreen
 import kg.geeks.rickmortyapicompose.ui.screens.episodes.detail.EpisodeDetailScreen
+import kg.geeks.rickmortyapicompose.ui.screens.favorites.FavoritesScreen
 import kg.geeks.rickmortyapicompose.ui.screens.locations.LocationsScreen
 import kg.geeks.rickmortyapicompose.ui.screens.locations.detail.LocationDetailScreen
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
@@ -67,7 +69,7 @@ fun App() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Characters.route,
+            startDestination = Screen.Favorites.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Characters.route) {
@@ -79,6 +81,9 @@ fun App() {
             composable(Screen.Episodes.route) {
                 EpisodesScreen(navController)
             }
+            composable(Screen.Favorites.route) {
+                FavoritesScreen(navController)
+            }
             composable("${Screen.CharacterDetail.route}/{characterId}") { backStackEntry ->
                 backStackEntry.arguments?.getString("characterId")?.let {
                     CharacterDetailScreen(
@@ -87,18 +92,18 @@ fun App() {
                     )
                 }
             }
-            composable("${Screen.EpisodeDetail.route}/{episodeId}") { backStackEntry ->
-                backStackEntry.arguments?.getString("episodeId")?.let {
-                    EpisodeDetailScreen(
-                        episodeId = it,
-                        navController = navController
-                    )
-                }
-            }
             composable("${Screen.LocationDetail.route}/{locationId}") { backStackEntry ->
                 backStackEntry.arguments?.getString("locationId")?.let {
                     LocationDetailScreen(
                         locationId = it,
+                        navController = navController
+                    )
+                }
+            }
+            composable("${Screen.EpisodeDetail.route}/{episodeId}") { backStackEntry ->
+                backStackEntry.arguments?.getString("episodeId")?.let {
+                    EpisodeDetailScreen(
+                        episodeId = it,
                         navController = navController
                     )
                 }
@@ -113,6 +118,7 @@ fun currentScreenTitle(currentRoute: String?): String? {
         currentRoute == Screen.Characters.route -> Screen.Characters.title
         currentRoute == Screen.Locations.route -> Screen.Locations.title
         currentRoute == Screen.Episodes.route -> Screen.Episodes.title
+        currentRoute == Screen.Favorites.route -> Screen.Favorites.title
         currentRoute?.startsWith(Screen.CharacterDetail.route) == true -> "Детали персонажа"
         currentRoute?.startsWith(Screen.LocationDetail.route) == true -> "Детали локации"
         currentRoute?.startsWith(Screen.EpisodeDetail.route) == true -> "Детали эпизода"
@@ -125,7 +131,8 @@ fun BottomNavigationBar(navController: NavController, currentRoute: String?) {
     val items = listOf(
         BottomNavItem(Screen.Characters, androidx.compose.material.icons.Icons.Filled.Home),
         BottomNavItem(Screen.Locations, androidx.compose.material.icons.Icons.Filled.Place),
-        BottomNavItem(Screen.Episodes, androidx.compose.material.icons.Icons.Filled.DateRange)
+        BottomNavItem(Screen.Episodes, androidx.compose.material.icons.Icons.Filled.DateRange),
+        BottomNavItem(Screen.Favorites, androidx.compose.material.icons.Icons.Filled.Favorite)
     )
 
     NavigationBar(

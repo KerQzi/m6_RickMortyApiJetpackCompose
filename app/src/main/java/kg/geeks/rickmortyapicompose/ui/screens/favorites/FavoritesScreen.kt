@@ -1,5 +1,4 @@
-package kg.geeks.rickmortyapicompose.ui.screens.characters
-
+package kg.geeks.rickmortyapicompose.ui.screens.favorites
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,8 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,92 +28,76 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.graphics.ColorFilter.Companion
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.rememberAsyncImagePainter
 import kg.geeks.rickmortyapicompose.R
-import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
-import kg.geeks.rickmortyapicompose.ui.navigation.Screen
+import kg.geeks.rickmortyapicompose.data.db.FavoriteCharacterEntity
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
 import kg.geeks.rickmortyapicompose.ui.theme.Gray
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CharactersScreen(
+fun FavoritesScreen(
     navController: NavController,
-    viewModel: CharacterViewModel = koinViewModel()
+    favoritesViewModel: FavoritesViewModel = koinViewModel()
 ) {
-//    val characters = listOf(
-//        Character(
-//            id = 1,
-//            name = "Dracula",
-//            status = Status.Dead,
-//            image = "https://rickandmortyapi.com/api/character/avatar/709.jpeg",
-//            species = "Mythological Creature",
-//            gender = "Male",
-//            location = "Interdimensional Cable"
-//        ),
-//    )
-
-    val charactersFlow by viewModel.charactersFlow.collectAsState()
-
+    val favoriteCharacters by favoritesViewModel.favoriteCharactersFlow.collectAsState(initial = emptyList())
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkGray)
     ) {
-        items(charactersFlow) { character ->
-            CharactersItem(character = character, navController = navController)
+        items(favoriteCharacters) { favorite ->
+            FavoriteItem(
+                favorite = favorite,
+                navController = navController,
+                onRemoveFavorite = { favoritesViewModel.removeFavorite(favorite) }
+            )
         }
     }
 }
 
 @Composable
-fun CharactersItem(
-    character: ResponseCharacterModel,
-    navController: NavController
+fun FavoriteItem(
+    favorite: FavoriteCharacterEntity,
+    navController: NavController,
+    onRemoveFavorite: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp)
             .padding(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Gray
-        ),
-        onClick = {
-            navController.navigate("${Screen.CharacterDetail.route}/${character.id}")
-        }
+        colors = CardDefaults.cardColors(containerColor = Gray)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             Image(
                 modifier = Modifier
                     .width(148.dp)
                     .fillMaxHeight(),
-                contentDescription = "Character image",
+                contentDescription = "Favorite Character Image",
                 contentScale = ContentScale.Crop,
-                painter = rememberAsyncImagePainter(character.image),
+                painter = rememberAsyncImagePainter(favorite.image)
             )
             Column(
                 modifier = Modifier
                     .padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.Center
-
             ) {
                 Text(
-                    text = character.name.toString(), color = White, fontSize = 26.sp
+                    text = favorite.name ?: "Unknown",
+                    color = White,
+                    fontSize = 26.sp
                 )
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
@@ -125,27 +112,31 @@ fun CharactersItem(
                         painter = rememberAsyncImagePainter(
                             R.drawable.circle
                         ),
-                        colorFilter = when (character.status) {
-                            "Dead" -> Companion.tint(Red)
-                            "Alive" -> Companion.tint(Green)
-                            else -> Companion.tint(White)
+                        colorFilter = when (favorite.status) {
+                            "Dead" -> ColorFilter.tint(Red)
+                            "Alive" -> ColorFilter.tint(Green)
+                            else -> ColorFilter.tint(White)
                         }
 
                     )
                     Text(
                         modifier = Modifier.padding(start = 8.dp),
-                        text = "${character.status} - ${character.species}",
+                        text = "${favorite.status} - ${favorite.species}",
                         color = White,
                         fontSize = 18.sp
                     )
+                    IconButton(onClick = onRemoveFavorite) {
+                        Icon(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .padding(2.dp),
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Remove Favorite",
+                            tint = Color.Red,
+                        )
+                    }
                 }
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CharactersScreenPreview() {
-    CharactersScreen(navController = NavController(LocalContext.current))
 }
