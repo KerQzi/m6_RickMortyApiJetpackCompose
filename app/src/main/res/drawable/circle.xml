@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FF5722" /> <!-- Цвет круга -->
+    <size android:width="8dp" android:height="8dp" /> <!-- Размер круга -->
+    <corners android:radius="4dp" /> <!-- Радиус, равный половине ширины или высоты -->
+</shape>
