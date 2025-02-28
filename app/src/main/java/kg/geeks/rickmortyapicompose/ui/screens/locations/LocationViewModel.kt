@@ -4,20 +4,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import kg.geeks.rickmortyapicompose.data.dto.ResponseLocationModel
 import kg.geeks.rickmortyapicompose.data.repository.LocationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class LocationViewModel(
     private val repository: LocationRepository
 ): ViewModel() {
 
-    private val _locationsFlow = MutableStateFlow<List<ResponseLocationModel>>(emptyList())
-    val locationsFlow: StateFlow<List<ResponseLocationModel>> = _locationsFlow.asStateFlow()
+    private val _locationsFlow = MutableStateFlow<PagingData<ResponseLocationModel>>(PagingData.empty())
+    val locationsFlow = _locationsFlow.asStateFlow()
 
     private val _locationDetailFlow = MutableStateFlow<ResponseLocationModel?>(null)
     val locationDetailFlow: StateFlow<ResponseLocationModel?> = _locationDetailFlow.asStateFlow()
@@ -27,11 +30,9 @@ class LocationViewModel(
     }
 
     fun fetchLocations() = viewModelScope.launch {
-        repository.fetchLocations()
-            .catch { _locationsFlow.value = emptyList() } //при ошибке выводит пустой лист
-            .collect { locations ->
-                _locationsFlow.value = locations
-            }
+        repository.fetchLocations().flow.cachedIn(viewModelScope).collectLatest {
+            _locationsFlow.value = it
+        }
     }
 
     fun fetchLocationDetail(id: Int) = viewModelScope.launch {

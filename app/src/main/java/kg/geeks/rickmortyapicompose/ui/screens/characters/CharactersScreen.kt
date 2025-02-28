@@ -4,6 +4,7 @@ package kg.geeks.rickmortyapicompose.ui.screens.characters
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,15 +14,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,9 +37,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
 import kg.geeks.rickmortyapicompose.R
 import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
+import kg.geeks.rickmortyapicompose.ui.components.LoadStateView
 import kg.geeks.rickmortyapicompose.ui.navigation.Screen
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
 import kg.geeks.rickmortyapicompose.ui.theme.Gray
@@ -60,17 +65,38 @@ fun CharactersScreen(
 //        ),
 //    )
 
-    val charactersFlow by viewModel.charactersFlow.collectAsState()
+    //    )
 
+    val characters = viewModel.charactersFlow.collectAsLazyPagingItems()
+    val state = rememberLazyListState()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkGray)
+            .background(DarkGray),
+        state = state
     ) {
-        items(charactersFlow) { character ->
-            CharactersItem(character = character, navController = navController)
+        items(characters.itemCount) { index ->
+            characters[index]?.let {
+                CharactersItem(character = it, navController = navController)
+            }
         }
+        item {
+            if (characters.loadState.append is LoadState.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+    if (characters.loadState.refresh is LoadState.Loading || characters.loadState.refresh is LoadState.Error) {
+        LoadStateView(
+            loadState = characters.loadState,
+            onRetry = { characters.retry() }
+        )
     }
 }
 

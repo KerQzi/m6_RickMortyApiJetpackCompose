@@ -1,7 +1,8 @@
 package kg.geeks.rickmortyapicompose.data.dto
 
 data class ResponseCharacters(
-    val results: List<ResponseCharacterModel>? = null
+    val results: List<ResponseCharacterModel>? = null,
+    val info: PageInfo? = null
 )
 data class ResponseCharacterModel(
     val id: Int? = null,

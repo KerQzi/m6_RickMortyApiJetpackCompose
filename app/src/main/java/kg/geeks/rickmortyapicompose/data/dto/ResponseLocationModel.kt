@@ -1,7 +1,8 @@
 package kg.geeks.rickmortyapicompose.data.dto
 
 data class ResponseLocations(
-    val results: List<ResponseLocationModel>? = null
+    val results: List<ResponseLocationModel>? = null,
+    val info: PageInfo? = null
 )
 data class ResponseLocationModel(
     val id: Int? = null,
