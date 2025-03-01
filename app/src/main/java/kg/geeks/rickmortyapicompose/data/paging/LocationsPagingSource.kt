@@ -9,13 +9,20 @@ import kg.geeks.rickmortyapicompose.data.dto.ResponseLocationModel
 import java.io.IOException
 
 class LocationsPagingSource(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val name: String? = null,
+    private val type: String? = null,
+    private val dimension: String? = null,
 ) : PagingSource<Int, ResponseLocationModel>() {
-
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ResponseLocationModel> {
         val page = params.key ?: 1
         return try {
-            val response = apiService.fetchAllLocations(page)
+            val response = apiService.fetchAllLocations(
+                page = page,
+                name = name,
+                type = type,
+                dimension = dimension
+            )
             if (response.isSuccessful && response.body() != null) {
                 val data = response.body()?.results ?: emptyList()
                 val prevKey = if (page == 1) null else page - 1
@@ -29,7 +36,6 @@ class LocationsPagingSource(
             } else {
                 LoadResult.Error(Exception(response.message()))
             }
-
         } catch (ex: IOException) {
             LoadResult.Error(ex)
         } catch (ex: HttpException) {

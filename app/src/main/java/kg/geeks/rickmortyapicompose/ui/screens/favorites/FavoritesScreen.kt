@@ -120,7 +120,9 @@ fun FavoriteItem(
 
                     )
                     Text(
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .width(146.dp),
                         text = "${favorite.status} - ${favorite.species}",
                         color = White,
                         fontSize = 18.sp
@@ -132,7 +134,7 @@ fun FavoriteItem(
                                 .padding(2.dp),
                             imageVector = Icons.Filled.Delete,
                             contentDescription = "Remove Favorite",
-                            tint = Color.Red,
+                            tint = Red,
                         )
                     }
                 }

@@ -9,12 +9,22 @@ import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
 import okio.IOException
 
 class CharactersPagingSource(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val name: String? = null,
+    private val status: String? = null,
+    private val species: String? = null,
+    private val gender: String? = null
 ) : PagingSource<Int, ResponseCharacterModel>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ResponseCharacterModel> {
         val page = params.key ?: 1
         return try {
-            val response = apiService.fetchAllCharacters(page)
+            val response = apiService.fetchAllCharacters(
+                page = page,
+                name = name,
+                status = status,
+                species = species,
+                gender = gender
+            )
             if (response.isSuccessful && response.body() != null) {
                 val data = response.body()?.results ?: emptyList()
                 val prevKey = if (page == 1) null else page - 1

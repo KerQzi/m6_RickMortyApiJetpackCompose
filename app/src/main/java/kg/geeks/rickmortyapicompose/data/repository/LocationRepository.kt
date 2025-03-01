@@ -3,6 +3,7 @@ package kg.geeks.rickmortyapicompose.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import kg.geeks.rickmortyapicompose.data.api.ApiService
+import kg.geeks.rickmortyapicompose.data.dto.LocationFilter
 import kg.geeks.rickmortyapicompose.data.dto.ResponseLocationModel
 import kg.geeks.rickmortyapicompose.data.paging.LocationsPagingSource
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,11 @@ import kotlinx.coroutines.flow.flowOn
 class LocationRepository(
     private val apiService: ApiService
 ) {
-    fun fetchLocations(): Pager<Int, ResponseLocationModel> {
+    fun fetchLocations(
+        name: String? = null,
+        type: String? = null,
+        dimension: String? = null
+    ): Pager<Int, ResponseLocationModel> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -21,7 +26,7 @@ class LocationRepository(
                 initialLoadSize = 60,
                 prefetchDistance = 10
             ),
-            pagingSourceFactory = { LocationsPagingSource(apiService) }
+            pagingSourceFactory = { LocationsPagingSource(apiService, name, type, dimension) }
         )
     }
 

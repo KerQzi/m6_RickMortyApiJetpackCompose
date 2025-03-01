@@ -15,7 +15,11 @@ interface ApiService {
 
     @GET("api/character")
     suspend fun fetchAllCharacters(
-        @Query("page") page: Int = 1
+        @Query("page") page: Int = 1,
+        @Query("name") name: String? = null,
+        @Query("status") status: String? = null,
+        @Query("species") species: String? = null,
+        @Query("gender") gender: String? = null
     ): Response<ResponseCharacters>
 
     @GET("api/character/{id}")
@@ -23,7 +27,9 @@ interface ApiService {
 
     @GET("api/episode")
     suspend fun fetchAllEpisodes(
-        @Query("page") page: Int = 1
+        @Query("page") page: Int = 1,
+        @Query("name") name: String? = null,
+        @Query("episode") episode: String? = null
     ): Response<ResponseEpisodes>
 
     @GET("api/episode/{id}")
@@ -31,7 +37,10 @@ interface ApiService {
 
     @GET("api/location")
     suspend fun fetchAllLocations(
-        @Query("page") page: Int = 1
+        @Query("page") page: Int = 1,
+        @Query("name") name: String? = null,
+        @Query("type") type: String? = null,
+        @Query("dimension") dimension: String? = null
     ): Response<ResponseLocations>
 
     @GET("api/location/{id}")

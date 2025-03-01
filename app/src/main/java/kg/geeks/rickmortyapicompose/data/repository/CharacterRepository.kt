@@ -12,7 +12,12 @@ import kotlinx.coroutines.flow.flowOn
 class CharacterRepository(
     private val apiService: ApiService
 ) {
-    fun fetchCharacters(): Pager<Int, ResponseCharacterModel> {
+    fun fetchCharacters(
+        name: String? = null,
+        status: String? = null,
+        species: String? = null,
+        gender: String? = null
+    ): Pager<Int, ResponseCharacterModel> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -21,7 +26,9 @@ class CharacterRepository(
                 initialLoadSize = 60,
                 prefetchDistance = 10
             ),
-            pagingSourceFactory = { CharactersPagingSource(apiService) }
+            pagingSourceFactory = {
+                CharactersPagingSource(apiService, name, status, species, gender)
+            }
         )
     }
 

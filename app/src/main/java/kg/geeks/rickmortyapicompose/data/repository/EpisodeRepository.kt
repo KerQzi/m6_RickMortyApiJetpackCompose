@@ -4,8 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import kg.geeks.rickmortyapicompose.data.api.ApiService
 import kg.geeks.rickmortyapicompose.data.dto.ResponseEpisodeModel
-import kg.geeks.rickmortyapicompose.data.paging.CharactersPagingSource
-import kg.geeks.rickmortyapicompose.data.paging.EpisodePagingSource
+import kg.geeks.rickmortyapicompose.data.paging.EpisodesPagingSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -13,7 +12,10 @@ import kotlinx.coroutines.flow.flowOn
 class EpisodeRepository(
     private val apiService: ApiService
 ) {
-    fun fetchEpisodes(): Pager<Int, ResponseEpisodeModel> {
+    fun fetchEpisodes(
+        name: String? = null,
+        episode: String? = null
+    ): Pager<Int, ResponseEpisodeModel> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -22,7 +24,7 @@ class EpisodeRepository(
                 initialLoadSize = 60,
                 prefetchDistance = 10
             ),
-            pagingSourceFactory = { EpisodePagingSource(apiService) }
+            pagingSourceFactory = { EpisodesPagingSource(apiService, name, episode) }
         )
     }
 

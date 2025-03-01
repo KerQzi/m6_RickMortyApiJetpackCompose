@@ -8,15 +8,19 @@ import kg.geeks.rickmortyapicompose.data.api.ApiService
 import kg.geeks.rickmortyapicompose.data.dto.ResponseEpisodeModel
 import java.io.IOException
 
-
-class EpisodePagingSource(
-    private val apiService: ApiService
+class EpisodesPagingSource(
+    private val apiService: ApiService,
+    private val name: String? = null,
+    private val episode: String? = null,
 ) : PagingSource<Int, ResponseEpisodeModel>() {
-
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ResponseEpisodeModel> {
         val page = params.key ?: 1
         return try {
-            val response = apiService.fetchAllEpisodes(page)
+            val response = apiService.fetchAllEpisodes(
+                page = page,
+                name = name,
+                episode = episode
+            )
             if (response.isSuccessful && response.body() != null) {
                 val data = response.body()?.results ?: emptyList()
                 val prevKey = if (page == 1) null else page - 1
@@ -30,7 +34,6 @@ class EpisodePagingSource(
             } else {
                 LoadResult.Error(Exception(response.message()))
             }
-
         } catch (ex: IOException) {
             LoadResult.Error(ex)
         } catch (ex: HttpException) {
