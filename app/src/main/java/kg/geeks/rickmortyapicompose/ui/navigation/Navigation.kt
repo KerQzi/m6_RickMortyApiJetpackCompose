@@ -73,7 +73,6 @@ fun App() {
         else -> true
     }
 
-    // Настройка смещения для BottomAppBar
     val bottomBarHeight = 100.dp
     val density = LocalDensity.current
     val bottomBarHeightPx = with(density) { bottomBarHeight.toPx() }
@@ -82,7 +81,6 @@ fun App() {
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // available.y > 0 при скролле вниз (контент движется вверх)
                 val delta = available.y
                 bottomBarOffset = (bottomBarOffset + delta)
                     .coerceIn(-bottomBarHeightPx, 0f)
@@ -92,7 +90,6 @@ fun App() {
     }
 
     val effectiveBottomPadding = with(density) {
-        // (bottomBarHeightPx + bottomBarOffset) может быть меньше 0 – ограничиваем снизу 0
         (bottomBarHeightPx + bottomBarOffset).coerceAtLeast(0f).toDp()
     }
 
