@@ -3,6 +3,7 @@ package kg.geeks.rickmortyapicompose.ui.screens.locations
 import LocationFilterDialog
 import SearchBar
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,19 +17,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kg.geeks.rickmortyapicompose.data.dto.LocationFilter
 import kg.geeks.rickmortyapicompose.ui.components.ListItem
 import kg.geeks.rickmortyapicompose.ui.components.LoadStateView
 import kg.geeks.rickmortyapicompose.ui.navigation.Screen
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -39,10 +45,33 @@ fun LocationsScreen(navController: NavController, viewModel: LocationViewModel =
     val filterState by viewModel.filter.collectAsState(initial = LocationFilter())
     val state = rememberLazyListState()
 
+    val isRefreshing = locations.loadState.refresh is LoadState.Loading
+
+    val coroutineScope = rememberCoroutineScope()
+    var totalDrag by remember { mutableStateOf(0f) }
+    val refreshThreshold = 150f
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkGray)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onVerticalDrag = { _, dragAmount ->
+                        totalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        if (totalDrag > refreshThreshold) {
+                            // Скроллим к началу списка и запускаем refresh
+                            coroutineScope.launch {
+                                state.animateScrollToItem(0)
+                            }
+                            locations.refresh()
+                        }
+                        totalDrag = 0f
+                    }
+                )
+            }
     ) {
         SearchBar(
             searchText = filterState.name.orEmpty(),
@@ -51,40 +80,51 @@ fun LocationsScreen(navController: NavController, viewModel: LocationViewModel =
             },
             onFilterClick = { showFilterDialog = true }
         )
-        if (locations.itemCount == 0 && locations.loadState.refresh !is LoadState.Loading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Nothing found",
-                    fontSize = 24.sp,
-                    color = White
-                )
-            }
-        } else {
-            LazyColumn(
-                state = state,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(locations.itemCount) { index ->
-                    locations[index]?.let { location ->
-                        ListItem(
-                            id = location.id ?: 0,
-                            name = location.name ?: "Unknown",
-                            onClick = {
-                                navController.navigate("${Screen.LocationDetail.route}/${location.id}")
-                            }
-                        )
-                    }
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing),
+            onRefresh = {
+                coroutineScope.launch {
+                    state.animateScrollToItem(0)
                 }
-                item {
-                    if (locations.loadState.append is LoadState.Loading) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                locations.refresh()
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (locations.itemCount == 0 && locations.loadState.refresh !is LoadState.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nothing found",
+                        fontSize = 24.sp,
+                        color = White
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = state,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(locations.itemCount) { index ->
+                        locations[index]?.let { location ->
+                            ListItem(
+                                id = location.id ?: 0,
+                                name = location.name ?: "Unknown",
+                                onClick = {
+                                    navController.navigate("${Screen.LocationDetail.route}/${location.id}")
+                                }
+                            )
+                        }
+                    }
+                    item {
+                        if (locations.loadState.append is LoadState.Loading) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
                         }
                     }
                 }

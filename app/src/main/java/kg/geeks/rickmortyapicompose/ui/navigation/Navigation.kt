@@ -1,5 +1,14 @@
 package kg.geeks.rickmortyapicompose.ui.navigation
 
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
@@ -16,9 +25,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -47,14 +69,45 @@ fun App() {
         currentRoute?.startsWith(Screen.CharacterDetail.route) == true ||
                 currentRoute?.startsWith(Screen.LocationDetail.route) == true ||
                 currentRoute?.startsWith(Screen.EpisodeDetail.route) == true -> false
+
         else -> true
     }
 
+    // Настройка смещения для BottomAppBar
+    val bottomBarHeight = 100.dp
+    val density = LocalDensity.current
+    val bottomBarHeightPx = with(density) { bottomBarHeight.toPx() }
+    var bottomBarOffset by remember { mutableFloatStateOf(0f) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                // available.y > 0 при скролле вниз (контент движется вверх)
+                val delta = available.y
+                bottomBarOffset = (bottomBarOffset + delta)
+                    .coerceIn(-bottomBarHeightPx, 0f)
+                return Offset.Zero
+            }
+        }
+    }
+
+    val effectiveBottomPadding = with(density) {
+        // (bottomBarHeightPx + bottomBarOffset) может быть меньше 0 – ограничиваем снизу 0
+        (bottomBarHeightPx + bottomBarOffset).coerceAtLeast(0f).toDp()
+    }
+
     Scaffold(
+        modifier = Modifier.nestedScroll(nestedScrollConnection),
+        containerColor = DarkGray,
         topBar = {
             if (showAppBars) {
                 TopAppBar(
-                    title = { Text(text = currentScreenTitle(currentRoute).toString(), color = Color.White) },
+                    title = {
+                        Text(
+                            text = currentScreenTitle(currentRoute).toString(),
+                            color = Color.White
+                        )
+                    },
                     colors = TopAppBarDefaults.smallTopAppBarColors(
                         containerColor = DarkGray
                     )
@@ -63,14 +116,17 @@ fun App() {
         },
         bottomBar = {
             if (showAppBars) {
-                BottomNavigationBar(navController, currentRoute)
+                BottomNavigationBar(navController, currentRoute, modifier = Modifier.graphicsLayer { translationY = -bottomBarOffset })
             }
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Favorites.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(
+                top = innerPadding.calculateTopPadding(),
+                bottom = effectiveBottomPadding
+            )
         ) {
             composable(Screen.Characters.route) {
                 CharactersScreen(navController)
@@ -84,7 +140,32 @@ fun App() {
             composable(Screen.Favorites.route) {
                 FavoritesScreen(navController)
             }
-            composable("${Screen.CharacterDetail.route}/{characterId}") { backStackEntry ->
+            composable(
+                "${Screen.CharacterDetail.route}/{characterId}",
+                enterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, -it.height) }, // Появление сверху
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) }, // Уход вниз
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                },
+                popEnterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, it.height) }, // Возвращение снизу
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) }, // Уход вверх при возврате
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                }) { backStackEntry ->
                 backStackEntry.arguments?.getString("characterId")?.let {
                     CharacterDetailScreen(
                         characterId = it,
@@ -92,7 +173,32 @@ fun App() {
                     )
                 }
             }
-            composable("${Screen.LocationDetail.route}/{locationId}") { backStackEntry ->
+            composable(
+                "${Screen.LocationDetail.route}/{locationId}",
+                enterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, -it.height) },
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                },
+                popEnterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                }) { backStackEntry ->
                 backStackEntry.arguments?.getString("locationId")?.let {
                     LocationDetailScreen(
                         locationId = it,
@@ -100,7 +206,32 @@ fun App() {
                     )
                 }
             }
-            composable("${Screen.EpisodeDetail.route}/{episodeId}") { backStackEntry ->
+            composable(
+                "${Screen.EpisodeDetail.route}/{episodeId}",
+                enterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, -it.height) },
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                },
+                popEnterTransition = {
+                    slideIn(
+                        initialOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 500, easing = EaseInOut)
+                    ) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOut(
+                        targetOffset = { IntOffset(0, it.height) },
+                        animationSpec = tween(durationMillis = 400, easing = EaseInOut)
+                    ) + fadeOut(animationSpec = tween(300))
+                }) { backStackEntry ->
                 backStackEntry.arguments?.getString("episodeId")?.let {
                     EpisodeDetailScreen(
                         episodeId = it,
@@ -127,7 +258,7 @@ fun currentScreenTitle(currentRoute: String?): String? {
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavController, currentRoute: String?) {
+fun BottomNavigationBar(navController: NavController, currentRoute: String?, modifier: Modifier = Modifier) {
     val items = listOf(
         BottomNavItem(Screen.Characters, androidx.compose.material.icons.Icons.Filled.Home),
         BottomNavItem(Screen.Locations, androidx.compose.material.icons.Icons.Filled.Place),
@@ -136,13 +267,26 @@ fun BottomNavigationBar(navController: NavController, currentRoute: String?) {
     )
 
     NavigationBar(
-        containerColor = DarkGray
+        containerColor = DarkGray,
+        modifier = modifier
     ) {
         items.forEach { item ->
+            val isSelected = currentRoute == item.screen.route
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.2f else 1f,
+                animationSpec = tween(durationMillis = 200)
+            )
+
             NavigationBarItem(
-                icon = { Icon(imageVector = item.icon, contentDescription = item.screen.title) },
+                icon = {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.screen.title,
+                        modifier = Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
+                    )
+                },
                 label = { item.screen.title?.let { Text(it) } },
-                selected = currentRoute == item.screen.route,
+                selected = isSelected,
                 onClick = {
                     navController.navigate(item.screen.route) {
                         popUpTo(navController.graph.startDestinationId) { saveState = true }

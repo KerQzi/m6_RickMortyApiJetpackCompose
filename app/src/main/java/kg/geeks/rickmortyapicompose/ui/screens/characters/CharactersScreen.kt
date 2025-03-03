@@ -1,10 +1,12 @@
 package kg.geeks.rickmortyapicompose.ui.screens.characters
 
 
+import AnimatedCard
 import CharacterFilterDialog
 import SearchBar
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.ColorFilter.Companion
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +49,8 @@ import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.rememberAsyncImagePainter
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kg.geeks.rickmortyapicompose.R
 import kg.geeks.rickmortyapicompose.data.dto.CharacterFilter
 import kg.geeks.rickmortyapicompose.data.dto.ResponseCharacterModel
@@ -52,6 +58,7 @@ import kg.geeks.rickmortyapicompose.ui.components.LoadStateView
 import kg.geeks.rickmortyapicompose.ui.navigation.Screen
 import kg.geeks.rickmortyapicompose.ui.theme.DarkGray
 import kg.geeks.rickmortyapicompose.ui.theme.Gray
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -77,10 +84,33 @@ fun CharactersScreen(
     val filterState by viewModel.filter.collectAsState(initial = CharacterFilter())
     val state = rememberLazyListState()
 
+    val isRefreshing = characters.loadState.refresh is LoadState.Loading
+
+    val coroutineScope = rememberCoroutineScope()
+    var totalDrag by remember { mutableStateOf(0f) }
+    val refreshThreshold = 150f
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkGray)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onVerticalDrag = { _, dragAmount ->
+                        totalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        if (totalDrag > refreshThreshold) {
+                            // Скроллим к началу списка и запускаем refresh
+                            coroutineScope.launch {
+                                state.animateScrollToItem(0)
+                            }
+                            characters.refresh()
+                        }
+                        totalDrag = 0f
+                    }
+                )
+            }
     ) {
         SearchBar(
             searchText = filterState.name.orEmpty(),
@@ -89,44 +119,43 @@ fun CharactersScreen(
             },
             onFilterClick = { showFilterDialog = true }
         )
-        if (characters.itemCount == 0 && characters.loadState.refresh !is LoadState.Loading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Ничего не найдено",
-                    fontSize = 24.sp,
-                    color = White
-                )
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing),
+            onRefresh = { coroutineScope.launch {
+                state.animateScrollToItem(0)
             }
-        } else {
-            LazyColumn(
-                state = state,
-                modifier = Modifier.fillMaxSize()
-
-            ) {
-                items(characters.itemCount) { index ->
-                    characters[index]?.let {
-                        CharactersItem(character = it, navController = navController)
-                    }
+                characters.refresh()},
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (characters.itemCount == 0 && characters.loadState.refresh !is LoadState.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Ничего не найдено",
+                        fontSize = 24.sp,
+                        color = White
+                    )
                 }
-                item {
-                    if (characters.loadState.append is LoadState.Loading) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+            } else {
+                LazyColumn(
+                    state = state,
+                    modifier = Modifier.fillMaxSize()
+
+                ) {
+                    items(characters.itemCount) { index ->
+                        characters[index]?.let {
+                            CharactersItem(character = it, navController = navController)
                         }
                     }
                 }
-            }
-            if (characters.loadState.refresh is LoadState.Loading || characters.loadState.refresh is LoadState.Error) {
-                LoadStateView(
-                    loadState = characters.loadState,
-                    onRetry = { characters.retry() }
-                )
+                if (characters.loadState.refresh is LoadState.Loading || characters.loadState.refresh is LoadState.Error) {
+                    LoadStateView(
+                        loadState = characters.loadState,
+                        onRetry = { characters.retry() }
+                    )
+                }
             }
         }
     }
@@ -152,7 +181,7 @@ fun CharactersItem(
     character: ResponseCharacterModel,
     navController: NavController
 ) {
-    Card(
+    AnimatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp)

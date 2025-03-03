@@ -89,4 +89,6 @@ dependencies {
     implementation (libs.androidx.paging.runtime)
     implementation (libs.androidx.paging.compose)
 
+    implementation ("com.google.accompanist:accompanist-swiperefresh:0.31.6-rc")
+
 }

@@ -1,5 +1,6 @@
 package kg.geeks.rickmortyapicompose.ui.components
 
+import AnimatedCard
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -17,7 +18,7 @@ fun ListItem(
     name: String,
     onClick: () -> Unit
 ) {
-    Card(
+    AnimatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
